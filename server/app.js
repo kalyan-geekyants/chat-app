@@ -1,36 +1,162 @@
 const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
-const cors = require("cors")
-
+const { Server } = require("socket.io");
+const cors = require("cors");
 const port = process.env.PORT || 4001;
+const {
+  validateEmail,
+  validateName,
+  validateAge,
+} = require("./utils/validations");
 
 const app = express();
 
-app.use(cors())
-
+app.use(cors());
 const server = http.createServer(app);
 
-const io = socketIo(server);
+const questions = [
+  "",
+  "Enter your email",
+  "Enter your age",
+  "Please confirm your details (yes/no):",
+];
+const cols = ["name", "email", "age", "confirm"];
 
-let interval;
-
-io.on("connection", (socket) => {
-  console.log("New client connected");
-  if (interval) {
-    clearInterval(interval);
-  }
-  interval = setInterval(() => getApiAndEmit(socket), 1000);
-  socket.on("disconnect", () => {
-    console.log("Client disconnected");
-    clearInterval(interval);
-  });
+const io = new Server(server, {
+  cors: { origin: "*" },
 });
 
-const getApiAndEmit = socket => {
-  const response = new Date();
-  // Emitting a new message. Will be consumed by the client
-  socket.emit("FromAPI", response);
-};
+io.on("connection", (socket) => {
+  let details = {};
+  let questionNo = 0;
+  // console.log("Room Id", socket.id);
+  socket.on("join_room", (data) => {
+    console.log(`User connected with ID ${data}`);
+    // * Joining in a room
+    socket.join(data);
+    socket.emit("hello_bot", {
+      userName: "bot",
+      message: "Hi there! I'm here to take details. Please enter your name...",
+    });
+  });
+
+  socket.on("send_message", (data) => {
+    // details += `${data.message} `;
+    // questionNo += 1;
+    console.log("Message Received", questions[questionNo], details);
+
+    if (cols[questionNo] === "name") {
+      if (validateName(data.message)) {
+        details[cols[questionNo]] = data.message;
+        questionNo++;
+        return socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: questions[questionNo],
+        });
+      }
+    }
+    if (cols[questionNo] === "email") {
+      // console.log("Email validated",validateEmail(data.message))
+      if (validateEmail(data.message)) {
+        details[cols[questionNo]] = data.message;
+        questionNo++;
+        return socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: questions[questionNo],
+        });
+      } else {
+        return socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: "Please enter valid email address!",
+        });
+      }
+    }
+
+    if (cols[questionNo] === "age") {
+      console.log("Age validated", validateAge(data.message));
+      if (validateAge(data.message)) {
+        details[cols[questionNo]] = data.message;
+        questionNo++;
+        return socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: questions[questionNo],
+          userDetails: details,
+        });
+      } else {
+        return socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: "Age should be a number!!",
+        });
+      }
+    }
+
+    if (cols[questionNo] == "confirm") {
+      if (data.message == "yes") {
+        questionNo = 0;
+        details = {};
+        socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: "Thanks for sharing your details :)",
+        });
+        socket.emit("hello_bot", {
+          userName: "bot",
+          message:
+            "Hi there! I'm here to take details. Please enter your name...",
+        });
+      } else if (data.message == "no") {
+        details = {};
+        questionNo = 0;
+        socket.emit("hello_bot", {
+          userName: "bot",
+          message: "Pleae re-enter your details. Enter your name...",
+        });
+      } else {
+        return socket.emit("receive_reply", {
+          userName: "bot",
+          no: questionNo,
+          message: "We didn't get you. Please confirm (yes/no):",
+        });
+      }
+    }
+
+    // if (questionNo < questions.length - 1) {
+    //   socket.emit("receive_reply", {
+    //     userName: "bot",
+    //     no: questionNo,
+    //     message: questions[questionNo],
+    //   });
+    // } else if (questionNo == questions.length - 1) {
+    //   socket.emit("receive_reply", {
+    //     userName: "bot",
+    //     no: questionNo,
+    //     message: questions[questionNo],
+    //     userDetails: details,
+    //   });
+    // } else if (questionNo === questions.length) {
+    //   socket.emit("receive_reply", {
+    //     userName: "bot",
+    //     no: questionNo,
+    //     message: "Thanks for sharing your details :)",
+    //   });
+    //   details = {};
+    //   questionNo = -1;
+    //   socket.emit("hello_bot", {
+    //     userName: "bot",
+    //     message:
+    //       "Hi there! I'm here to take details. Please enter your name...",
+    //   });
+    // }
+  });
+
+  // socket.on("disconnect", () => {
+  //   console.log("user disconnected");
+  // });
+});
 
 server.listen(port, () => console.log(`Listening on port ${port}`));

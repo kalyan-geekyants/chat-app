@@ -1,21 +1,29 @@
-import React, { useState, useEffect } from "react";
-import socketIOClient from "socket.io-client";
-const ENDPOINT = "http://127.0.0.1:4001";
+import React, { useState } from "react";
+import io from "socket.io-client";
+import Chat from "./components/Chat";
+
+const socket = io.connect("http://localhost:4001");
 
 function App() {
-  const [response, setResponse] = useState("");
 
-  useEffect(() => {
-    // const socket = socketIOClient(ENDPOINT);
-    // socket.on("FromAPI", data => {
-    //   setResponse(data);
-    // });
-  }, []);
+  const [show,setShow] = useState(false);
+  const [roomId,setRoomId] = useState();
+  const [user,setUser] = useState("kk");
+
+
+  const joinChat = () =>{
+    const roomId = Math.random();
+    setRoomId(roomId);
+    console.log(roomId);
+    socket.emit("join_room",roomId);
+    setShow(true);
+  }
+
 
   return (
-    <p>
-      It's <time dateTime={response}>{response}</time>
-    </p>
+    <div style={{ padding: "2rem" }}>
+      {show? <Chat socket={socket} roomId={roomId} user={user} /> :<button onClick={joinChat}>Chat with Bot</button>}
+    </div>
   );
 }
 
