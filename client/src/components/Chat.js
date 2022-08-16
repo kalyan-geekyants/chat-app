@@ -34,7 +34,7 @@ function Chat({ socket, roomId, user }) {
       console.log(data);
       setMessages((prev) => [...prev, data]);
     });
-    // return socket.disconnect();
+    return () =>socket.disconnect();
   }, [socket]);
 
   return (

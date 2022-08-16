@@ -124,39 +124,11 @@ io.on("connection", (socket) => {
         });
       }
     }
-
-    // if (questionNo < questions.length - 1) {
-    //   socket.emit("receive_reply", {
-    //     userName: "bot",
-    //     no: questionNo,
-    //     message: questions[questionNo],
-    //   });
-    // } else if (questionNo == questions.length - 1) {
-    //   socket.emit("receive_reply", {
-    //     userName: "bot",
-    //     no: questionNo,
-    //     message: questions[questionNo],
-    //     userDetails: details,
-    //   });
-    // } else if (questionNo === questions.length) {
-    //   socket.emit("receive_reply", {
-    //     userName: "bot",
-    //     no: questionNo,
-    //     message: "Thanks for sharing your details :)",
-    //   });
-    //   details = {};
-    //   questionNo = -1;
-    //   socket.emit("hello_bot", {
-    //     userName: "bot",
-    //     message:
-    //       "Hi there! I'm here to take details. Please enter your name...",
-    //   });
-    // }
   });
 
-  // socket.on("disconnect", () => {
-  //   console.log("user disconnected");
-  // });
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
+  });
 });
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
